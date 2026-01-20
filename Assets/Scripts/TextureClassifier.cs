@@ -1,17 +1,51 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.UIElements;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class TextureClassifier : MonoBehaviour
 {
     public ReferenceTextureSet referenceSet;
+    public TMP_Dropdown selectMenu;
+    public ScrollView scrollView;
+    public TMP_Text text;
+    public Dictionary<string, List<string>> resultDictionary = new Dictionary<string, List<string>>();
 
     void Start()
     {
+        ComputeOptions(selectMenu, referenceSet);
+        
         ComputeReferenceHistograms();
         ClassifySceneTextures();
+
     }
 
-    void ComputeReferenceHistograms()
+    public void ChangeResults()
+    {
+        
+        string yes= string.Join("\n", resultDictionary[selectMenu.options[selectMenu.value].text]);
+        text.text = yes;
+
+    }
+
+    public void ComputeOptions(TMP_Dropdown dropdown, ReferenceTextureSet reference)
+    {
+        List<string> list = new List<string>();
+        foreach (var entry in reference.textures)
+        {
+            resultDictionary.Add(entry.label, new List<string>());
+            list.Add(entry.label);
+            
+        }
+        resultDictionary.Add("Missing Texture", new List<string>());
+        list.Add("Missing Texture");
+        dropdown.AddOptions(list);
+
+    }
+
+    public void ComputeReferenceHistograms()
     {
         foreach (var entry in referenceSet.textures)
         {
@@ -20,7 +54,7 @@ public class TextureClassifier : MonoBehaviour
         }
     }
 
-    void ClassifySceneTextures()
+    public void ClassifySceneTextures()
     {
         Renderer[] renderers = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
 
@@ -55,20 +89,21 @@ public class TextureClassifier : MonoBehaviour
                             bestLabel = refTex.label;
                         }
                     }
-
+                    resultDictionary[bestLabel].Add(r.gameObject.name);
                     Debug.Log(
                         $"{r.gameObject.name} ? {bestLabel} ({bestScore:F3})");
                 }
             }
             if (!hasTexture)
             {
+                resultDictionary["Missing Texture"].Add(r.gameObject.name);
                 Debug.Log(
                     $"{r.gameObject.name} ? NoTexture");
             }
         }
     }
 
-    Texture2D MakeReadable(Texture2D original)
+    public Texture2D MakeReadable(Texture2D original)
     {
         RenderTexture rt = RenderTexture.GetTemporary(
             original.width, original.height, 0);
