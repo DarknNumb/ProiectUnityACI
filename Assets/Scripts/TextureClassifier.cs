@@ -12,10 +12,12 @@ public class TextureClassifier : MonoBehaviour
     public ScrollView scrollView;
     public TMP_Text text;
     public Dictionary<string, List<string>> resultDictionary = new Dictionary<string, List<string>>();
+    public Camera mainCamera;
+    public UnityEngine.UI.Slider slider;
 
     void Start()
     {
-        ComputeOptions(selectMenu, referenceSet);
+        ComputeOptions();
         
         ComputeReferenceHistograms();
         ClassifySceneTextures();
@@ -30,18 +32,31 @@ public class TextureClassifier : MonoBehaviour
 
     }
 
-    public void ComputeOptions(TMP_Dropdown dropdown, ReferenceTextureSet reference)
+    public void RefreshResults()
+    {
+        selectMenu.ClearOptions();
+        resultDictionary = new Dictionary<string, List<string>>();
+        ComputeOptions();
+
+        ComputeReferenceHistograms();
+        ClassifySceneTextures();
+        ChangeResults();
+    }
+
+    public void ComputeOptions()
     {
         List<string> list = new List<string>();
-        foreach (var entry in reference.textures)
+        foreach (var entry in referenceSet.textures)
         {
             resultDictionary.Add(entry.label, new List<string>());
             list.Add(entry.label);
             
         }
         resultDictionary.Add("Missing Texture", new List<string>());
+        resultDictionary.Add("No Category", new List<string>());
         list.Add("Missing Texture");
-        dropdown.AddOptions(list);
+        list.Add("No Category");
+        selectMenu.AddOptions(list);
 
     }
 
@@ -89,9 +104,15 @@ public class TextureClassifier : MonoBehaviour
                             bestLabel = refTex.label;
                         }
                     }
-                    resultDictionary[bestLabel].Add(r.gameObject.name);
-                    Debug.Log(
-                        $"{r.gameObject.name} ? {bestLabel} ({bestScore:F3})");
+                    if (bestScore <= slider.value)
+                    {
+                        resultDictionary[bestLabel].Add(r.gameObject.name);
+                    } else
+                    {
+                        resultDictionary["No Category"].Add(r.gameObject.name);
+                    }
+                        Debug.Log(
+                            $"{r.gameObject.name} ? {bestLabel} ({bestScore:F3})");
                 }
             }
             if (!hasTexture)
